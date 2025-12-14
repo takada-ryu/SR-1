@@ -370,3 +370,26 @@ footer {
         transform: translateY(0);
     }
 }
+
+/* Language Toggle */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.lang-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+    font-family: var(--font-dot);
+    padding: 0.5rem;
+}
+
+.lang-btn:hover {
+    opacity: 1;
+}
