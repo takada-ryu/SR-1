@@ -9,6 +9,64 @@ const statusText = document.querySelector('.status-text');
 const statusIndicator = document.getElementById('status-indicator');
 const audioToggle = document.getElementById('audio-toggle');
 const sysAudioToggle = document.getElementById('system-audio-toggle');
+const langToggle = document.getElementById('lang-toggle');
+
+const translations = {
+    en: {
+        status_ready: "READY",
+        status_rec: "REC",
+        frame_rate: "FRAME RATE",
+        resolution: "RESOLUTION",
+        microphone: "MICROPHONE",
+        system_audio: "SYSTEM AUDIO",
+        rec: "REC",
+        stop: "STOP",
+        download: "DOWNLOAD",
+        close: "CLOSE",
+        mic_error: "Microphone access failed. Recording video only."
+    },
+    ja: {
+        status_ready: "準備完了",
+        status_rec: "録画中",
+        frame_rate: "フレームレート",
+        resolution: "解像度",
+        microphone: "マイク",
+        system_audio: "システム音声",
+        rec: "録画",
+        stop: "停止",
+        download: "保存",
+        close: "閉じる",
+        mic_error: "マイクへのアクセスに失敗しました。映像のみ録画します。"
+    }
+};
+
+let currentLang = 'en';
+
+function setLanguage(lang) {
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    langToggle.textContent = lang === 'en' ? 'JP' : 'EN';
+
+    // Update all data-i18n elements
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        if (translations[lang][key]) {
+            element.textContent = translations[lang][key];
+        }
+    });
+
+    // Update status text specifically if needed (handling dynamic state)
+    // But since status-text has data-i18n, it might be overwritten by "READY" or "REC" based on state.
+    // We should ensure updateUIState uses the translation.
+    // Re-run updateUIState to refresh dynamic text if needed, but easier to just let the next update handle it or handle it here.
+    const isRecording = statusIndicator.classList.contains('recording');
+    statusText.textContent = isRecording ? translations[lang].status_rec : translations[lang].status_ready;
+}
+
+langToggle.addEventListener('click', () => {
+    const newLang = currentLang === 'en' ? 'ja' : 'en';
+    setLanguage(newLang);
+});
 
 let mediaRecorder;
 let recordedChunks = [];
@@ -102,7 +160,7 @@ async function startRecording() {
 
             } catch (err) {
                 console.warn("Mic access denied or error:", err);
-                alert("Microphone access failed. Recording video only.");
+                alert(translations[currentLang].mic_error);
             }
         }
 
@@ -189,7 +247,7 @@ function updateUIState(isRecording) {
         stopBtn.classList.remove('hidden');
         controlPanel.classList.add('recording-mode'); // Optional style hook
         statusIndicator.classList.add('recording');
-        statusText.textContent = "REC";
+        statusText.textContent = translations[currentLang].status_rec;
 
         // Hide settings during recording if desired, or keep them
         // For simple nothing style, maybe keep it minimal
@@ -200,7 +258,7 @@ function updateUIState(isRecording) {
         startBtn.classList.remove('hidden');
         stopBtn.classList.add('hidden');
         statusIndicator.classList.remove('recording');
-        statusText.textContent = "READY";
+        statusText.textContent = translations[currentLang].status_ready;
 
         document.querySelectorAll('.settings-group').forEach(el => el.style.opacity = '1');
         document.querySelectorAll('input').forEach(el => el.disabled = false);

@@ -20,9 +20,12 @@
         <div class="brand">
             <span class="dot-font">SR 1</span>
         </div>
-        <div class="status-indicator" id="status-indicator">
-            <div class="status-dot"></div>
-            <span class="status-text dot-font">READY</span>
+        <div class="header-controls">
+            <button id="lang-toggle" class="lang-btn dot-font">JP</button>
+            <div class="status-indicator" id="status-indicator">
+                <div class="status-dot"></div>
+                <span class="status-text dot-font" data-i18n="status_ready">READY</span>
+            </div>
         </div>
     </header>
 
@@ -30,26 +33,26 @@
         <div class="control-panel glass-panel">
             <div class="settings-group">
                 <label class="setting-item">
-                    <span class="label-text dot-font">FRAME RATE</span>
+                    <span class="label-text dot-font" data-i18n="frame_rate">FRAME RATE</span>
                     <div class="switch-container">
                         <span class="value-text">60 FPS</span>
                     </div>
                 </label>
                 <label class="setting-item">
-                    <span class="label-text dot-font">RESOLUTION</span>
+                    <span class="label-text dot-font" data-i18n="resolution">RESOLUTION</span>
                     <div class="switch-container">
                         <span class="value-text">1080P</span>
                     </div>
                 </label>
                 <label class="setting-item" for="audio-toggle">
-                    <span class="label-text dot-font">MICROPHONE</span>
+                    <span class="label-text dot-font" data-i18n="microphone">MICROPHONE</span>
                     <label class="toggle-switch">
                         <input type="checkbox" id="audio-toggle">
                         <span class="slider"></span>
                     </label>
                 </label>
                 <label class="setting-item" for="system-audio-toggle">
-                    <span class="label-text dot-font">SYSTEM AUDIO</span>
+                    <span class="label-text dot-font" data-i18n="system_audio">SYSTEM AUDIO</span>
                     <label class="toggle-switch">
                         <input type="checkbox" id="system-audio-toggle" checked>
                         <span class="slider"></span>
@@ -61,13 +64,13 @@
                 <button id="start-btn" class="nothing-btn start-btn">
                     <span class="btn-content">
                         <span class="icon-record"></span>
-                        <span class="btn-text dot-font">REC</span>
+                        <span class="btn-text dot-font" data-i18n="rec">REC</span>
                     </span>
                 </button>
                 <button id="stop-btn" class="nothing-btn stop-btn hidden">
                     <span class="btn-content">
                         <span class="icon-stop"></span>
-                        <span class="btn-text dot-font">STOP</span>
+                        <span class="btn-text dot-font" data-i18n="stop">STOP</span>
                     </span>
                 </button>
             </div>
@@ -77,8 +80,8 @@
             <video id="preview-video" controls playsinline></video>
             <div class="file-info hidden" id="file-info">
                 <span class="file-name dot-font">REC_001.mp4</span>
-                <button id="download-btn" class="download-btn dot-font">DOWNLOAD</button>
-                <button id="close-preview-btn" class="close-btn dot-font">CLOSE</button>
+                <button id="download-btn" class="download-btn dot-font" data-i18n="download">DOWNLOAD</button>
+                <button id="close-preview-btn" class="close-btn dot-font" data-i18n="close">CLOSE</button>
             </div>
         </div>
     </main>
