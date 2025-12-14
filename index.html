@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SR 1 - Screen Recorder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+
+<body>
+    <div class="noise-overlay"></div>
+
+    <header>
+        <div class="brand">
+            <span class="dot-font">SR 1</span>
+        </div>
+        <div class="status-indicator" id="status-indicator">
+            <div class="status-dot"></div>
+            <span class="status-text dot-font">READY</span>
+        </div>
+    </header>
+
+    <main>
+        <div class="control-panel glass-panel">
+            <div class="settings-group">
+                <label class="setting-item">
+                    <span class="label-text dot-font">FRAME RATE</span>
+                    <div class="switch-container">
+                        <span class="value-text">60 FPS</span>
+                    </div>
+                </label>
+                <label class="setting-item">
+                    <span class="label-text dot-font">RESOLUTION</span>
+                    <div class="switch-container">
+                        <span class="value-text">1080P</span>
+                    </div>
+                </label>
+                <label class="setting-item" for="audio-toggle">
+                    <span class="label-text dot-font">MICROPHONE</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="audio-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </label>
+                <label class="setting-item" for="system-audio-toggle">
+                    <span class="label-text dot-font">SYSTEM AUDIO</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="system-audio-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </label>
+            </div>
+
+            <div class="action-area">
+                <button id="start-btn" class="nothing-btn start-btn">
+                    <span class="btn-content">
+                        <span class="icon-record"></span>
+                        <span class="btn-text dot-font">REC</span>
+                    </span>
+                </button>
+                <button id="stop-btn" class="nothing-btn stop-btn hidden">
+                    <span class="btn-content">
+                        <span class="icon-stop"></span>
+                        <span class="btn-text dot-font">STOP</span>
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <div class="preview-container hidden" id="preview-container">
+            <video id="preview-video" controls playsinline></video>
+            <div class="file-info hidden" id="file-info">
+                <span class="file-name dot-font">REC_001.mp4</span>
+                <button id="download-btn" class="download-btn dot-font">DOWNLOAD</button>
+                <button id="close-preview-btn" class="close-btn dot-font">CLOSE</button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <span class="copyright dot-font">© Takada 2025</span>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
