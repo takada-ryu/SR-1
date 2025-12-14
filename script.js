@@ -5,6 +5,12 @@ const controlPanel = document.querySelector('.control-panel');
 const previewVideo = document.getElementById('preview-video');
 const downloadBtn = document.getElementById('download-btn');
 const closePreviewBtn = document.getElementById('close-preview-btn');
+const backToHistoryBtn = document.getElementById('back-to-history-btn');
+const fileInfo = document.getElementById('file-info');
+const historyBtn = document.getElementById('history-btn');
+const historyPanel = document.getElementById('history-panel');
+const historyList = document.getElementById('history-list');
+const closeHistoryBtn = document.getElementById('close-history-btn');
 const statusText = document.querySelector('.status-text');
 const statusIndicator = document.getElementById('status-indicator');
 const audioToggle = document.getElementById('audio-toggle');
@@ -21,7 +27,11 @@ const translations = {
         system_audio: "SYSTEM AUDIO",
         rec: "REC",
         stop: "STOP",
+        history: "HISTORY",
         download: "DOWNLOAD",
+        back: "BACK",
+        view: "VIEW",
+        empty_history: "No history yet.",
         close: "CLOSE",
         mic_error: "Microphone access failed. Recording video only."
     },
@@ -34,7 +44,11 @@ const translations = {
         system_audio: "システム音声",
         rec: "録画",
         stop: "停止",
+        history: "履歴",
         download: "保存",
+        back: "戻る",
+        view: "閲覧",
+        empty_history: "履歴はまだありません。",
         close: "閉じる",
         mic_error: "マイクへのアクセスに失敗しました。映像のみ録画します。"
     }
@@ -61,6 +75,10 @@ function setLanguage(lang) {
     // Re-run updateUIState to refresh dynamic text if needed, but easier to just let the next update handle it or handle it here.
     const isRecording = statusIndicator.classList.contains('recording');
     statusText.textContent = isRecording ? translations[lang].status_rec : translations[lang].status_ready;
+
+    if (historyPanel && !historyPanel.classList.contains('hidden')) {
+        openHistory();
+    }
 }
 
 langToggle.addEventListener('click', () => {
@@ -74,6 +92,112 @@ let completeBlob = null;
 let stream = null;
 let audioContext = null;
 let audioSources = [];
+let previewSource = 'recording';
+
+const HISTORY_DB_NAME = 'sr1_history_db';
+const HISTORY_STORE_NAME = 'recordings';
+const HISTORY_MAX_ITEMS = 100;
+
+function openHistoryDB() {
+    return new Promise((resolve, reject) => {
+        if (!('indexedDB' in window)) {
+            reject(new Error('IndexedDB not supported'));
+            return;
+        }
+
+        const req = indexedDB.open(HISTORY_DB_NAME, 1);
+
+        req.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(HISTORY_STORE_NAME)) {
+                const store = db.createObjectStore(HISTORY_STORE_NAME, { keyPath: 'id' });
+                store.createIndex('createdAt', 'createdAt', { unique: false });
+            }
+        };
+
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function saveToHistory(item) {
+    const db = await openHistoryDB();
+    await new Promise((resolve, reject) => {
+        const tx = db.transaction(HISTORY_STORE_NAME, 'readwrite');
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.objectStore(HISTORY_STORE_NAME).put(item);
+    });
+    await trimHistory();
+}
+
+async function trimHistory() {
+    const db = await openHistoryDB();
+    const items = await getHistoryItems();
+    if (items.length <= HISTORY_MAX_ITEMS) return;
+
+    const toDelete = items.slice(HISTORY_MAX_ITEMS);
+    await new Promise((resolve, reject) => {
+        const tx = db.transaction(HISTORY_STORE_NAME, 'readwrite');
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        const store = tx.objectStore(HISTORY_STORE_NAME);
+        toDelete.forEach(item => store.delete(item.id));
+    });
+}
+
+async function getHistoryItems() {
+    const db = await openHistoryDB();
+    return await new Promise((resolve, reject) => {
+        const tx = db.transaction(HISTORY_STORE_NAME, 'readonly');
+        const store = tx.objectStore(HISTORY_STORE_NAME);
+        const index = store.index('createdAt');
+        const items = [];
+        const cursorReq = index.openCursor(null, 'prev');
+
+        cursorReq.onsuccess = (event) => {
+            const cursor = event.target.result;
+            if (cursor) {
+                items.push(cursor.value);
+                cursor.continue();
+            } else {
+                resolve(items);
+            }
+        };
+        cursorReq.onerror = () => reject(cursorReq.error);
+    });
+}
+
+async function getHistoryItem(id) {
+    const db = await openHistoryDB();
+    return await new Promise((resolve, reject) => {
+        const tx = db.transaction(HISTORY_STORE_NAME, 'readonly');
+        const req = tx.objectStore(HISTORY_STORE_NAME).get(id);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+function formatBytes(bytes) {
+    if (!bytes && bytes !== 0) return '';
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    let i = 0;
+    let val = bytes;
+    while (val >= 1024 && i < sizes.length - 1) {
+        val /= 1024;
+        i++;
+    }
+    return `${val.toFixed(i === 0 ? 0 : 1)} ${sizes[i]}`;
+}
+
+function formatDate(ts) {
+    try {
+        const d = new Date(ts);
+        return d.toLocaleString();
+    } catch (_) {
+        return '';
+    }
+}
 
 // Check for MP4 support
 const types = [
@@ -95,6 +219,9 @@ startBtn.addEventListener('click', startRecording);
 stopBtn.addEventListener('click', stopRecording);
 downloadBtn.addEventListener('click', downloadVideo);
 closePreviewBtn.addEventListener('click', resetUI);
+historyBtn.addEventListener('click', openHistory);
+closeHistoryBtn.addEventListener('click', closeHistory);
+backToHistoryBtn.addEventListener('click', backToHistory);
 
 async function startRecording() {
     try {
@@ -218,7 +345,20 @@ function handleStop() {
     // Update Filename with timestamp
     const date = new Date();
     const ts = `${date.getHours()}${date.getMinutes()}_${date.getDate()}`;
-    document.querySelector('.file-name').textContent = `REC_SR1_${ts}.${ext}`;
+    const fileName = `REC_SR1_${ts}.${ext}`;
+    document.querySelector('.file-name').textContent = fileName;
+
+    previewSource = 'recording';
+    backToHistoryBtn.classList.add('hidden');
+
+    saveToHistory({
+        id: Date.now(),
+        name: fileName,
+        createdAt: new Date().toISOString(),
+        type: selectedType,
+        size: completeBlob.size,
+        blob: completeBlob
+    }).catch(() => { });
 
     updateUIState(false);
 }
@@ -266,13 +406,130 @@ function updateUIState(isRecording) {
         // Show preview
         controlPanel.classList.add('hidden');
         previewContainer.classList.remove('hidden');
+        fileInfo.classList.remove('hidden');
     }
 }
 
 function resetUI() {
     previewContainer.classList.add('hidden');
     controlPanel.classList.remove('hidden');
+    historyPanel.classList.add('hidden');
     previewVideo.src = "";
     recordedChunks = [];
     completeBlob = null;
+    previewSource = 'recording';
+    backToHistoryBtn.classList.add('hidden');
+}
+
+async function openHistory() {
+    try {
+        const items = await getHistoryItems();
+        renderHistory(items.slice(0, HISTORY_MAX_ITEMS));
+    } catch (_) {
+        renderHistory([]);
+    }
+
+    controlPanel.classList.add('hidden');
+    previewContainer.classList.add('hidden');
+    historyPanel.classList.remove('hidden');
+}
+
+function closeHistory() {
+    historyPanel.classList.add('hidden');
+    controlPanel.classList.remove('hidden');
+}
+
+function backToHistory() {
+    previewContainer.classList.add('hidden');
+    historyPanel.classList.remove('hidden');
+    openHistory();
+}
+
+function renderHistory(items) {
+    historyList.innerHTML = '';
+
+    if (!items || items.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'history-item';
+        const meta = document.createElement('div');
+        meta.className = 'history-meta';
+        const name = document.createElement('div');
+        name.className = 'history-name dot-font';
+        name.textContent = translations[currentLang].empty_history;
+        meta.appendChild(name);
+        empty.appendChild(meta);
+        historyList.appendChild(empty);
+        return;
+    }
+
+    items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'history-item';
+
+        const meta = document.createElement('div');
+        meta.className = 'history-meta';
+
+        const name = document.createElement('div');
+        name.className = 'history-name dot-font';
+        name.textContent = item.name || 'REC';
+
+        const sub = document.createElement('div');
+        sub.className = 'history-sub';
+        sub.textContent = `${formatDate(item.createdAt)}  ${formatBytes(item.size)}`;
+
+        meta.appendChild(name);
+        meta.appendChild(sub);
+
+        const actions = document.createElement('div');
+        actions.className = 'history-actions';
+
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'close-btn dot-font';
+        viewBtn.textContent = translations[currentLang].view;
+        viewBtn.addEventListener('click', async () => {
+            const full = await getHistoryItem(item.id);
+            if (!full || !full.blob) return;
+
+            completeBlob = full.blob;
+            const url = URL.createObjectURL(completeBlob);
+            previewVideo.src = url;
+            document.querySelector('.file-name').textContent = full.name || 'REC';
+            previewSource = 'history';
+            backToHistoryBtn.classList.remove('hidden');
+
+            historyPanel.classList.add('hidden');
+            previewContainer.classList.remove('hidden');
+            fileInfo.classList.remove('hidden');
+        });
+
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'download-btn dot-font';
+        dlBtn.textContent = translations[currentLang].download;
+        dlBtn.addEventListener('click', async () => {
+            const full = await getHistoryItem(item.id);
+            if (!full || !full.blob) return;
+            downloadBlob(full.blob, full.name || 'REC');
+        });
+
+        actions.appendChild(viewBtn);
+        actions.appendChild(dlBtn);
+
+        row.appendChild(meta);
+        row.appendChild(actions);
+        historyList.appendChild(row);
+    });
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }, 100);
 }

@@ -22,6 +22,7 @@
         </div>
         <div class="header-controls">
             <button id="lang-toggle" class="lang-btn dot-font">JP</button>
+            <button id="history-btn" class="lang-btn dot-font" data-i18n="history">HISTORY</button>
             <div class="status-indicator" id="status-indicator">
                 <div class="status-dot"></div>
                 <span class="status-text dot-font" data-i18n="status_ready">READY</span>
@@ -81,13 +82,22 @@
             <div class="file-info hidden" id="file-info">
                 <span class="file-name dot-font">REC_001.mp4</span>
                 <button id="download-btn" class="download-btn dot-font" data-i18n="download">DOWNLOAD</button>
+                <button id="back-to-history-btn" class="close-btn dot-font hidden" data-i18n="back">BACK</button>
                 <button id="close-preview-btn" class="close-btn dot-font" data-i18n="close">CLOSE</button>
             </div>
+        </div>
+
+        <div class="history-panel glass-panel hidden" id="history-panel">
+            <div class="history-header">
+                <span class="history-title dot-font" data-i18n="history">HISTORY</span>
+                <button id="close-history-btn" class="close-btn dot-font" data-i18n="close">CLOSE</button>
+            </div>
+            <div class="history-list" id="history-list"></div>
         </div>
     </main>
 
     <footer>
-        <span class="copyright dot-font">© SR 1</span>
+        <span class="copyright dot-font">&copy; SR 1</span>
     </footer>
 
     <script src="script.js"></script>
